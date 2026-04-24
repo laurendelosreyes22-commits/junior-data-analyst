@@ -36,3 +36,6 @@ CREATE TABLE IF NOT EXISTS firecrawl_raw (
 
 -- Verify
 SHOW TABLES IN SCHEMA junior_data_analyst.raw;
+
+-- Analytics schema (dbt writes here)
+CREATE SCHEMA IF NOT EXISTS junior_data_analyst.analytics;
