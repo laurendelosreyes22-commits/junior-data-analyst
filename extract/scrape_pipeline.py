@@ -17,6 +17,7 @@ QUERIES = [
     ("EPCVIP personal loans payday loans lead generation", 5),
     ("financial services PPC advertising keywords strategy", 5),
     ("consumer lending market trends personal loans credit cards", 5),
+    ("LendingTree QuinStreet MoneyMutual lead gen affiliate marketing", 3),
 ]
 
 RAW_DIR = Path(__file__).parent.parent / "knowledge" / "raw"
