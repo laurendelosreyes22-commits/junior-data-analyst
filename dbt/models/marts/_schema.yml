@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: dim_keyword
+    description: "One row per tracked financial keyword."
+    columns:
+      - name: keyword_id
+        tests:
+          - unique
+          - not_null
+      - name: keyword
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_region
+    description: "One row per US state."
+    columns:
+      - name: region_id
+        tests:
+          - unique
+          - not_null
+      - name: region
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_date
+    description: "One row per unique week_start date."
+    columns:
+      - name: date_id
+        tests:
+          - unique
+          - not_null
+
+  - name: fact_search_interest
+    description: "One row per keyword x region x week. Grain: search interest score."
+    columns:
+      - name: keyword_id
+        tests:
+          - not_null
+      - name: region_id
+        tests:
+          - not_null
+      - name: date_id
+        tests:
+          - not_null
+      - name: interest_value
+        tests:
+          - not_null
