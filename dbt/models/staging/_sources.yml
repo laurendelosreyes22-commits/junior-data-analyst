@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: raw
+    database: junior_data_analyst
+    schema: raw
+    tables:
+      - name: google_trends_raw
