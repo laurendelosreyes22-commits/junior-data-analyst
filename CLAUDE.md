@@ -5,7 +5,7 @@
 **Student:** Lauren De Los Reyes
 **Course:** ISBA 4715 — Analytics Engineering
 **Target Role:** Junior Data Analyst at EPCVIP, Inc
-**GitHub Repo:** [marketing-analyst-fintech](https://github.com/laurendelosreyes22-commits/marketing-analyst-fintech)
+**GitHub Repo:** [junior-data-analyst](https://github.com/laurendelosreyes22-commits/junior-data-analyst)
 
 This portfolio project builds an end-to-end analytics pipeline tracking Google Trends search demand for financial product keywords (personal loans, payday loans, credit cards) — the same signals a PPC analyst at EPCVIP monitors to optimize ad spend.
 
@@ -30,7 +30,7 @@ pytrends API → GitHub Actions → Snowflake Raw → dbt Staging → dbt Mart �
 Web Scrape → GitHub Actions → knowledge/raw/ → Claude Code → knowledge/wiki/
 ```
 
-### Star Schema (`marketing-analyst-fintech` Snowflake database)
+### Star Schema (`junior-data-analyst` Snowflake database)
 
 ```
 fact_search_interest
