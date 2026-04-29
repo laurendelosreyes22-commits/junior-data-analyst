@@ -8,7 +8,7 @@ An end-to-end analytics pipeline tracking Google Trends search demand for financ
 
 ## Live Dashboard
 
-Deployed on Streamlit Community Cloud: [https://[your-app].streamlit.app](https://[your-app].streamlit.app)
+Deployed on Streamlit Community Cloud: [https://junior-data-analyst-56witkrgeceqhugwofdpzf.streamlit.app](https://junior-data-analyst-56witkrgeceqhugwofdpzf.streamlit.app)
 
 ---
 
