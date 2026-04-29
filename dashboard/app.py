@@ -76,7 +76,7 @@ def load_data() -> pd.DataFrame:
     return df
 
 # ── App header ────────────────────────────────────────────────────────────────
-st.title("📊 Financial Services Keyword Demand Intelligence")
+st.title("Financial Keyword Intelligence Dashboard")
 st.caption(
     "Google Trends search interest for financial product keywords across US states — "
     "the same signals a PPC analyst at EPCVIP monitors to optimize ad spend."
@@ -93,17 +93,24 @@ tab1, tab2, tab3 = st.tabs(["📈 Descriptive", "🔍 Diagnostic", "💬 Ask the
 with tab1:
     st.subheader("What happened? Search demand by keyword and state")
 
+    with st.expander("ℹ️ How to read this dashboard"):
+        st.markdown("""
+**Interest Score (0–100):** Pulled from Google Trends. A score of 100 means peak search popularity for that keyword in that location. It's a relative measure — not raw search volume, but how much interest there is compared to the highest point in the data.
+
+**Keyword definitions:**
+| Keyword | Category | What it means |
+|---|---|---|
+| Personal loans | Consumer lending | Fixed-amount loans repaid over months/years — used for big purchases or debt consolidation |
+| Installment loans | Consumer lending | Similar to personal loans — repaid in fixed monthly installments |
+| Credit cards | Revolving credit | Revolving lines of credit — borrow, repay, borrow again |
+| Payday loans | Short-term credit | Small, short-term loans due on your next paycheck — typically high interest |
+| Cash advance | Short-term credit | Borrowing against a credit card or paycheck before payday |
+        """)
+
     keyword_options = ["All"] + sorted(df["keyword"].unique().tolist())
     selected = st.selectbox("Filter by keyword", keyword_options)
 
     filtered = df if selected == "All" else df[df["keyword"] == selected]
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Avg Interest Score", f"{filtered['interest_value'].mean():.0f}")
-    top_state = filtered.groupby("region")["interest_value"].mean().idxmax()
-    col2.metric("Top State", top_state)
-    top_kw = df.groupby("keyword")["interest_value"].mean().idxmax()
-    col3.metric("Top Keyword", top_kw)
 
     map_df = (
         filtered.groupby(["region", "state_code"])["interest_value"]
@@ -117,59 +124,83 @@ with tab1:
         color="interest_value",
         scope="usa",
         color_continuous_scale="Blues",
-        title="Average Search Interest by State",
+        title="Average Search Interest by State — click a state to explore",
         labels={"interest_value": "Avg Interest"},
     )
     fig_map.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0})
     event = st.plotly_chart(fig_map, use_container_width=True, on_select="rerun", selection_mode="points")
 
+    # Determine if a state is clicked
+    clicked_state = None
     if event and event.selection and event.selection.points:
         abbrev_to_state = {v: k for k, v in STATE_ABBREV.items()}
         clicked_code = event.selection.points[0].get("location")
         clicked_state = abbrev_to_state.get(clicked_code)
-        if clicked_state:
-            st.markdown(f"### {clicked_state} — Keyword Breakdown")
-            state_df = (
-                filtered[filtered["region"] == clicked_state][["keyword", "category", "interest_value"]]
-                .sort_values("interest_value", ascending=False)
-                .reset_index(drop=True)
-            )
-            st.dataframe(state_df, use_container_width=True, hide_index=True)
 
-    if selected == "All":
-        bar_df = (
-            df.groupby(["keyword", "category"])["interest_value"]
-            .mean()
-            .reset_index()
+    # KPIs update based on clicked state or overall
+    kpi_data = filtered[filtered["region"] == clicked_state] if clicked_state else filtered
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Avg Interest Score", f"{kpi_data['interest_value'].mean():.0f}")
+    col2.metric("Selected State" if clicked_state else "Top State",
+                clicked_state if clicked_state else filtered.groupby("region")["interest_value"].mean().idxmax())
+    col3.metric("Top Keyword", kpi_data.groupby("keyword")["interest_value"].mean().idxmax())
+
+    # Download button for full filtered dataset
+    st.download_button(
+        label="Download data as CSV",
+        data=filtered.to_csv(index=False),
+        file_name=f"keyword_interest_{selected.replace(' ', '_')}.csv",
+        mime="text/csv",
+    )
+
+    if clicked_state:
+        st.markdown(f"#### {clicked_state} — Keyword Breakdown")
+        state_df = (
+            kpi_data[["keyword", "category", "interest_value"]]
+            .sort_values("interest_value", ascending=False)
+            .reset_index(drop=True)
         )
-        fig_bar = px.bar(
-            bar_df,
-            x="keyword",
-            y="interest_value",
-            color="category",
-            title="Average Search Interest by Keyword",
-            labels={"interest_value": "Avg Interest", "keyword": "Keyword"},
-            color_discrete_map=CATEGORY_COLORS,
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
+        st.dataframe(state_df, use_container_width=True, hide_index=True)
+
 
 # ── TAB 2: DIAGNOSTIC ────────────────────────────────────────────────────────
 with tab2:
-    st.subheader("Why did it happen? Category and geographic patterns")
+    st.subheader("Which financial products drive the most search demand?")
+    st.caption("Averaged across all US states. Higher score = more Google searches.")
 
-    cat_df = df.groupby("category")["interest_value"].mean().reset_index()
+    with st.expander("ℹ️ How to read this tab"):
+        st.markdown("""
+**What this tab shows:** Instead of individual keywords, this groups them into 3 product categories and compares which category gets the most search interest nationally.
+
+**The 3 categories:**
+- **Revolving credit** — Credit cards. People can borrow, repay, and borrow again up to a limit.
+- **Short-term credit** — Payday loans and cash advances. Small amounts borrowed for a short time, usually at high interest rates.
+- **Consumer lending** — Personal loans and installment loans. Larger amounts repaid in fixed monthly payments over time.
+
+**What the score means:** Same 0–100 Google Trends scale as Tab 1, but averaged across all keywords in that category and all US states. So if revolving credit scores 42, that means credit card searches are at 42% of their peak popularity on average across the country.
+
+**Why this matters:** EPCVIP generates leads for lenders in all three categories. Knowing which category has the highest demand nationally — and which states lead each category — helps decide where to focus ad spend.
+        """)
+
+
+    cat_df = df.groupby("category")["interest_value"].mean().reset_index().sort_values("interest_value", ascending=False)
+    cat_df.columns = ["Category", "Avg Interest Score"]
+    cat_df["Avg Interest Score"] = cat_df["Avg Interest Score"].round(1)
+
     fig_cat = px.bar(
         cat_df,
-        x="category",
-        y="interest_value",
-        color="category",
-        title="Average Search Interest by Product Category",
-        labels={"interest_value": "Avg Interest", "category": "Category"},
+        x="Category",
+        y="Avg Interest Score",
+        color="Category",
+        text="Avg Interest Score",
         color_discrete_map=CATEGORY_COLORS,
     )
+    fig_cat.update_traces(textposition="outside")
+    fig_cat.update_layout(showlegend=False, xaxis_title="", yaxis_title="Avg Google Trends Score (0–100)")
     st.plotly_chart(fig_cat, use_container_width=True)
 
-    st.markdown("**Top state per category**")
+    st.markdown("#### Which state leads each category?")
+    st.caption("The single highest-demand state for each product type.")
     top_states = (
         df.groupby(["category", "region"])["interest_value"]
         .mean()
@@ -178,9 +209,9 @@ with tab2:
         .groupby("category")
         .first()
         .reset_index()[["category", "region", "interest_value"]]
-        .rename(columns={"region": "Top State", "interest_value": "Avg Interest"})
+        .rename(columns={"category": "Product Category", "region": "Top State", "interest_value": "Avg Interest Score"})
     )
-    top_states["Avg Interest"] = top_states["Avg Interest"].round(1)
+    top_states["Avg Interest Score"] = top_states["Avg Interest Score"].round(1)
     st.dataframe(top_states, use_container_width=True, hide_index=True)
 
     st.info(
@@ -192,32 +223,28 @@ with tab2:
 
 # ── TAB 3: CHAT ──────────────────────────────────────────────────────────────
 with tab3:
-    st.subheader("Ask about the financial services lead gen industry")
-    st.caption(
-        "Powered by 17 scraped sources on EPCVIP, PPC strategy, and consumer lending trends"
-    )
+    st.subheader("Ask the Knowledge Base")
+    st.caption("Ask anything about EPCVIP, financial services, or the lead gen industry.")
 
-    RAW_DIR = str(Path(__file__).parent.parent / "knowledge" / "raw")
+    with st.expander("ℹ️ How this works"):
+        st.markdown("""
+Search a knowledge base built from 17 scraped articles and reports about EPCVIP, PPC advertising, consumer lending trends, and competitor companies (LendingTree, QuinStreet, MoneyMutual).
 
-    SUGGESTED = [
-        "What is EPCVIP's business model?",
-        "How do PPC keywords work in financial services?",
-        "Who are EPCVIP's main competitors?",
+Type a keyword or topic and it will surface the most relevant excerpts from the knowledge base. It won't search the internet — only what's in the scraped sources.
+        """)
+
+    WIKI_DIR = Path(__file__).parent.parent / "knowledge" / "wiki"
+
+    WIKI_PAGES = [
+        ("01-epcvip-overview.md", "🏢 EPCVIP Overview", "What EPCVIP does, their business model, and key differentiators"),
+        ("02-competitor-landscape.md", "⚔️ Competitor Landscape", "LendingTree, QuinStreet, MoneyMutual — how they compare"),
+        ("03-ppc-keyword-strategy.md", "🎯 PPC Keyword Strategy", "How PPC advertising works in financial services"),
+        ("04-consumer-lending-trends.md", "📈 Consumer Lending Trends", "2025–2026 market trends and geographic demand patterns"),
     ]
 
-    if "question" not in st.session_state:
-        st.session_state.question = ""
-
-    cols = st.columns(3)
-    for i, q in enumerate(SUGGESTED):
-        if cols[i].button(q, use_container_width=True):
-            st.session_state.question = q
-
-    question = st.text_input("Or ask your own question:", value=st.session_state.question)
-
-    if question:
-        with st.spinner("Searching knowledge base and generating answer..."):
-            context = retrieve_context(question, RAW_DIR, top_k=3)
-            api_key = get_secret("ANTHROPIC_API_KEY")
-            answer = ask_claude(question, context, api_key)
-        st.markdown(answer)
+    for filename, title, description in WIKI_PAGES:
+        filepath = WIKI_DIR / filename
+        if filepath.exists():
+            content = filepath.read_text(encoding="utf-8")
+            with st.expander(f"{title} — {description}"):
+                st.markdown(content)
