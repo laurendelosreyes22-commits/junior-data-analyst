@@ -6,3 +6,6 @@ pandas
 pytest
 dbt-core
 dbt-snowflake
+streamlit
+plotly
+anthropic

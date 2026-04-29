@@ -213,3 +213,6 @@ project-requirements-README.md
 proposal-template.md
 
 .superpowers/
+
+# Streamlit secrets
+.streamlit/secrets.toml
