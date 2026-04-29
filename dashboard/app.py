@@ -1,5 +1,8 @@
 import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import streamlit as st
 import pandas as pd
@@ -68,7 +71,9 @@ def load_data() -> pd.DataFrame:
         JOIN junior_data_analyst.analytics.dim_keyword k ON f.keyword_id = k.keyword_id
         JOIN junior_data_analyst.analytics.dim_region r ON f.region_id = r.region_id
     """
-    return pd.read_sql(sql, conn)
+    df = pd.read_sql(sql, conn)
+    df.columns = df.columns.str.lower()
+    return df
 
 # ── App header ────────────────────────────────────────────────────────────────
 st.title("📊 Financial Services Keyword Demand Intelligence")
@@ -116,7 +121,20 @@ with tab1:
         labels={"interest_value": "Avg Interest"},
     )
     fig_map.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0})
-    st.plotly_chart(fig_map, use_container_width=True)
+    event = st.plotly_chart(fig_map, use_container_width=True, on_select="rerun", selection_mode="points")
+
+    if event and event.selection and event.selection.points:
+        abbrev_to_state = {v: k for k, v in STATE_ABBREV.items()}
+        clicked_code = event.selection.points[0].get("location")
+        clicked_state = abbrev_to_state.get(clicked_code)
+        if clicked_state:
+            st.markdown(f"### {clicked_state} — Keyword Breakdown")
+            state_df = (
+                filtered[filtered["region"] == clicked_state][["keyword", "category", "interest_value"]]
+                .sort_values("interest_value", ascending=False)
+                .reset_index(drop=True)
+            )
+            st.dataframe(state_df, use_container_width=True, hide_index=True)
 
     if selected == "All":
         bar_df = (
