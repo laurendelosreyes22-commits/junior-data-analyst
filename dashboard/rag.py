@@ -2,9 +2,11 @@ from pathlib import Path
 import anthropic
 
 
-def retrieve_context(question: str, raw_dir: str, top_k: int = 3) -> str:
-    """Search knowledge/raw/ markdown files and return top_k most relevant."""
-    files = list(Path(raw_dir).glob("*.md"))
+def retrieve_context(question: str, raw_dir: str, top_k: int = 5) -> str:
+    """Search knowledge/raw/ and knowledge/wiki/ markdown files and return top_k most relevant."""
+    raw_path = Path(raw_dir)
+    wiki_path = raw_path.parent / "wiki"
+    files = list(raw_path.glob("*.md")) + list(wiki_path.glob("*.md"))
     question_words = set(question.lower().split())
     scores = []
     for f in files:
@@ -14,7 +16,7 @@ def retrieve_context(question: str, raw_dir: str, top_k: int = 3) -> str:
     scores.sort(reverse=True)
     top = scores[:top_k]
     return "\n\n---\n\n".join(
-        f"Source: {name}\n{content[:1500]}" for _, name, content in top
+        f"Source: {name}\n{content[:2000]}" for _, name, content in top
     )
 
 
