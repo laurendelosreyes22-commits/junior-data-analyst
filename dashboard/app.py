@@ -248,3 +248,29 @@ Click any topic below to read a synthesized summary. These pages were generated 
             content = filepath.read_text(encoding="utf-8")
             with st.expander(f"{title} — {description}"):
                 st.markdown(content)
+
+    st.divider()
+    st.markdown("#### 💬 Ask a question")
+    st.caption("Claude will search the knowledge base and answer based on the scraped sources.")
+
+    RAW_DIR = str(Path(__file__).parent.parent / "knowledge" / "raw")
+
+    if "chat_messages" not in st.session_state:
+        st.session_state.chat_messages = []
+
+    for msg in st.session_state.chat_messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    if prompt := st.chat_input("e.g. What is EPCVIP's business model?"):
+        st.session_state.chat_messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            with st.spinner("Searching knowledge base..."):
+                context = retrieve_context(prompt, RAW_DIR, top_k=3)
+                answer = ask_claude(prompt, context, api_key=get_secret("ANTHROPIC_API_KEY"))
+            st.markdown(answer)
+
+        st.session_state.chat_messages.append({"role": "assistant", "content": answer})
