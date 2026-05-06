@@ -1,7 +1,9 @@
 import os
+import time
 from datetime import datetime
 import pandas as pd
 from pytrends.request import TrendReq
+from pytrends.exceptions import TooManyRequestsError
 import snowflake.connector
 from snowflake.connector.pandas_tools import write_pandas
 from dotenv import load_dotenv
@@ -17,13 +19,27 @@ KEYWORDS = [
 ]
 
 
+def fetch_keyword(pytrends, keyword, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            pytrends.build_payload([keyword], timeframe="today 12-m", geo="US")
+            df = pytrends.interest_by_region(resolution="REGION", inc_low_vol=True)
+            return df
+        except TooManyRequestsError:
+            wait = 60 * (attempt + 1)  # 60s, 120s, 180s
+            print(f"Rate limited on '{keyword}' (attempt {attempt + 1}). Waiting {wait}s...")
+            time.sleep(wait)
+    raise RuntimeError(f"Failed to fetch '{keyword}' after {max_retries} retries")
+
+
 def extract_google_trends():
     pytrends = TrendReq(hl="en-US", tz=360)
     rows = []
 
-    for keyword in KEYWORDS:
-        pytrends.build_payload([keyword], timeframe="today 12-m", geo="US")
-        df = pytrends.interest_by_region(resolution="REGION", inc_low_vol=True)
+    for i, keyword in enumerate(KEYWORDS):
+        if i > 0:
+            time.sleep(5)  # pause between keywords to avoid rate limits
+        df = fetch_keyword(pytrends, keyword)
         df.index.name = "geoName"
         df = df.reset_index()
 
