@@ -26,10 +26,11 @@ def fetch_keyword(pytrends, keyword, max_retries=3):
             df = pytrends.interest_by_region(resolution="REGION", inc_low_vol=True)
             return df
         except TooManyRequestsError:
-            wait = 60 * (attempt + 1)  # 60s, 120s, 180s
+            wait = 120 * (attempt + 1)  # 120s, 240s, 360s
             print(f"Rate limited on '{keyword}' (attempt {attempt + 1}). Waiting {wait}s...")
             time.sleep(wait)
-    raise RuntimeError(f"Failed to fetch '{keyword}' after {max_retries} retries")
+    print(f"WARNING: Failed to fetch '{keyword}' after {max_retries} retries — skipping.")
+    return None
 
 
 def extract_google_trends():
@@ -38,8 +39,10 @@ def extract_google_trends():
 
     for i, keyword in enumerate(KEYWORDS):
         if i > 0:
-            time.sleep(5)  # pause between keywords to avoid rate limits
+            time.sleep(10)  # pause between keywords to avoid rate limits
         df = fetch_keyword(pytrends, keyword)
+        if df is None:
+            continue  # skip this keyword, keep going with the rest
         df.index.name = "geoName"
         df = df.reset_index()
 
