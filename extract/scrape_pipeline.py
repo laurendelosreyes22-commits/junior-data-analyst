@@ -38,7 +38,9 @@ def search_query(query, limit=5):
     }
     response = requests.post(FIRECRAWL_URL, headers=headers, json=payload)
     data = response.json()
-    results = data.get("data", {}).get("web", [])
+    raw = data.get("data", [])
+    # v2 API returns data as a list directly; older versions used {"web": [...]}
+    results = raw if isinstance(raw, list) else raw.get("web", [])
     return [r for r in results if r.get("markdown")]
 
 
@@ -93,4 +95,7 @@ if __name__ == "__main__":
         file_index += len(rows)
 
     print(f"\nTotal files saved: {file_index - 1}")
-    load_to_snowflake(all_rows)
+    if not all_rows:
+        print("No results scraped — skipping Snowflake load.")
+    else:
+        load_to_snowflake(all_rows)
