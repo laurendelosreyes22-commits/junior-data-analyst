@@ -156,7 +156,10 @@ with tab1:
     if clicked_state:
         st.markdown(f"#### {clicked_state} — Keyword Breakdown")
         state_df = (
-            kpi_data[["keyword", "category", "interest_value"]]
+            kpi_data.groupby(["keyword", "category"])["interest_value"]
+            .mean()
+            .round(1)
+            .reset_index()
             .sort_values("interest_value", ascending=False)
             .reset_index(drop=True)
         )
