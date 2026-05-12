@@ -1,0 +1,73 @@
+What is the business question?	Where should EPCVIP focus marketing based on keyword demand by state
+
+What is pytrends?	Unofficial Python wrapper for Google Trends, no official API
+
+What are the 5 keywords?	personal loans, installment loans, payday loans, cash advance, credit cards
+
+What does the 0-100 score mean?	Relative search interest, not absolute search volume
+
+What happens when pytrends gets rate limited?	Retries 3 times, waits 120s, 240s, 360s then skips
+
+How often does pytrends run?	Daily, 9am UTC
+
+How often does Firecrawl run?	Weekly, Sundays 9am UTC
+
+What is special about the Firecrawl workflow?	Has a manual trigger so you can run it anytime
+
+Where are Snowflake credentials stored?	GitHub Secrets, never hardcoded
+
+What is the raw table called?	GOOGLE_TRENDS_RAW in the RAW schema
+
+What are the 5 columns in the raw table?	KEYWORD, REGION, WEEK_START, INTEREST_VALUE, LOADED_AT
+
+What is the raw table used for?	Landing zone, never modified, just appends
+
+What is the staging model called?	stg_google_trends_raw
+
+Why is staging a view not a table?	No storage needed, marts query through it
+
+What does staging clean?	Casts WEEK_START to date and INTEREST_VALUE to integer
+
+What are the 3 dims?	dim_keyword, dim_region, dim_date
+
+What is in dim_keyword?	keyword_id, keyword, category
+
+What category is personal loans?	consumer lending
+
+What category is installment loans?	consumer lending
+
+What category is payday loans?	short-term credit
+
+What category is cash advance?	short-term credit
+
+What category is credit cards?	revolving credit
+
+What is in dim_region?	region_id, region, 51 US states
+
+What is in dim_date?	date_id, week_start, month, year, quarter
+
+How are surrogate keys generated?	md5()
+
+What are the columns in fact_search_interest?	keyword_id, region_id, date_id, interest_value
+
+How many rows in fact_search_interest?	6,222
+
+How many dbt tests?	14, all passed
+
+What type of joins does fact use?	Inner joins to all 3 dims
+
+What does Tab 1 show?	Choropleth map, click a state to see KPIs and keyword breakdown
+
+What does Tab 2 show?	Bar chart comparing 3 categories, top state per category
+
+What does Tab 3 show?	4 wiki pages and a RAG chatbot
+
+How many raw sources in the knowledge base?	17
+
+What is RAG?	Retrieve top 3 relevant chunks, pass to Claude API, get an answer
+
+What is the key insight?	Short-term credit keywords are highest in Mississippi and Louisiana
+
+Why Mississippi and Louisiana?	Lower median income, fewer banking options, underserved market
+
+What does the insight mean for EPCVIP?	Lower lender competition, better cost-per-lead, increase ad spend there
